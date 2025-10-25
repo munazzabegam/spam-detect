@@ -1,7 +1,8 @@
-# src/db_ops.py (UPDATED CODE)
+# src/db_ops.py
 import sqlite3
 import pandas as pd
 import os
+import random # Needed for shuffling the data
 
 DB_NAME = 'spam_database.db'
 
@@ -22,7 +23,7 @@ def init_db():
     conn.close()
 
 def insert_message(message_text, true_label, priority=1, is_used=False):
-    """Inserts a single message into the database."""
+    """Inserts a single message into the database (used by the /feedback route)."""
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute(
@@ -47,10 +48,11 @@ def update_training_status():
     conn.commit()
     conn.close()
 
-def insert_bulk_data():
-    """Inserts all 30 samples directly into the database."""
-    data = [
-        # HAM SAMPLES (Priority 1 for initial bulk data)
+def get_500_sample_data():
+    """Generates exactly 500 samples by repeating the 30 unique messages."""
+    
+    unique_data = [
+        # HAM SAMPLES (15 total)
         ("Confirmed appointment for 3 PM on Tuesday. Don't be late!", "ham", 1),
         ("The new project requirements document has been uploaded to the shared drive.", "ham", 1),
         ("Can we reschedule the client review meeting to Wednesday afternoon?", "ham", 1),
@@ -67,7 +69,7 @@ def insert_bulk_data():
         ("The maintenance fee for the condo is due next month.", "ham", 1),
         ("The team meeting location has been moved to Conference Room C. Please note the change.", "ham", 1),
         
-        # SPAM SAMPLES (Priority 1 for initial bulk data)
+        # SPAM SAMPLES (15 total)
         ("URGENT! Claim your FREE $5,000 prize NOW before it expires!", "spam", 1),
         ("Your acct has been suspended. Verify your bank info immediately at this link.", "spam", 1),
         ("We are liquidating assets! Last chance to invest! Limited time offer.", "spam", 1),
@@ -85,8 +87,28 @@ def insert_bulk_data():
         ("RE: Your outstanding invoice—pay now to avoid late payment fees.", "spam", 1)
     ]
 
+    # Calculate repetitions: 500 / 30 = 16.66. We'll repeat 16 times (480 total)
+    REPETITIONS = 16
+    
+    # 1. Start with 480 samples (16 * 30)
+    data_500_samples = unique_data * REPETITIONS
+    
+    # 2. Add the remaining 20 samples (500 - 480)
+    data_500_samples.extend(unique_data[:20])
+    
+    # Shuffle the final list to mix Ham and Spam samples before insertion
+    random.shuffle(data_500_samples)
+
+    return data_500_samples
+
+
+def insert_bulk_data():
+    """Inserts all 500 generated samples directly into the database."""
+    data = get_500_sample_data()
+    
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    # Insert data (message_text, true_label, priority)
     c.executemany("INSERT INTO messages (message_text, true_label, priority) VALUES (?, ?, ?)", data)
     conn.commit()
     conn.close()
@@ -97,8 +119,8 @@ if __name__ == '__main__':
     init_db()
     
     # Check if data exists before inserting to prevent duplicates
-    if fetch_training_data().shape[0] == 0:
+    if fetch_training_data().shape[0] < 500:
         count = insert_bulk_data()
         print(f"Database initialized and {count} samples inserted.")
     else:
-        print("Database initialized. Data already present.")
+        print(f"Database initialized. {fetch_training_data().shape[0]} samples already present.")
