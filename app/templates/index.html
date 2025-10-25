@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spam Email Detector</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: auto; padding: 20px; background-color: #f4f7f6; }
+        h1, h2 { color: #2c3e50; }
+        textarea { width: 100%; height: 150px; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
+        .result { padding: 15px; margin-top: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .spam { color: #c0392b; font-weight: bold; background-color: #fcebeb; }
+        .ham { color: #27ae60; font-weight: bold; background-color: #eaf7ee; }
+        .flash { padding: 10px; margin-bottom: 10px; border-radius: 4px; font-weight: 500;}
+        .flash.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .predict-btn { background-color: #2980b9; color: white; margin-top: 10px; }
+        .predict-btn:hover { background-color: #2471a3; }
+        .manage-btn { background-color: #3498db; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>📧 Spam Detector (Prediction Interface)</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <h2>1. Message Prediction</h2>
+    <form method="POST" action="{{ url_for('index') }}">
+        <label for="message">Enter Email/Message Content:</label><br>
+        <textarea id="message" name="message" required placeholder="Example: Congrats! You won a free prize! Call 800-XXX-XXXX." style="color: #333;">{{ input_text }}</textarea><br>
+        <button type="submit" class="predict-btn">Predict Spam/Ham</button>
+    </form>
+
+    {% if prediction %}
+        <div class="result {% if prediction.is_spam %}spam{% else %}ham{% endif %}">
+            <h3>Prediction Result:</h3>
+            {% if prediction.error %}
+                <p style="color: red;">{{ prediction.error }}</p>
+                <p>Since the model is untrained, use the section below to add your first samples!</p>
+            {% else %}
+                <p>Label: <span style="font-size: 1.2em;">{{ prediction.label }}</span></p>
+                <p>Confidence: {{ prediction.confidence }}</p>
+            {% endif %}
+        </div>
+
+        {% if input_text %}
+            <h3>2. Provide Feedback (Help the model learn!):</h3>
+            <p>If the prediction above was incorrect (or to add a sample when the model is untrained), provide the correct label:</p>
+            
+            <form method="POST" action="{{ url_for('feedback') }}" style="display: inline-block;">
+                <input type="hidden" name="message_text" value="{{ input_text }}">
+                <input type="hidden" name="correct_label" value="spam">
+                <button type="submit" style="background-color: #f7a29a; color: #c0392b;">Mark as SPAM</button>
+            </form>
+            
+            <form method="POST" action="{{ url_for('feedback') }}" style="display: inline-block;">
+                <input type="hidden" name="message_text" value="{{ input_text }}">
+                <input type="hidden" name="correct_label" value="ham">
+                <button type="submit" style="background-color: #a2f7bf; color: #27ae60;">Mark as HAM</button>
+            </form>
+            <p style="font-size: small; color: gray; margin-top: 5px;">*Feedback samples (words and labels) are used to retrain the model.</p>
+        {% endif %}
+
+    {% endif %}
+
+    <hr style="margin: 20px 0;">
+
+    <h2>3. Model Management</h2>
+    <p>View training status, data collected, and trigger model retraining on a dedicated page.</p>
+    
+    <a href="{{ training_url }}">
+        <button type="button" class="manage-btn">
+            Go to Training Management Page →
+        </button>
+    </a>
+
+</body>
+</html>

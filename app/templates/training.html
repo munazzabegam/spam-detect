@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Model Training Management</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: auto; padding: 20px; background-color: #f4f7f6; }
+        h1, h2 { color: #2c3e50; }
+        .flash { padding: 10px; margin-bottom: 10px; border-radius: 4px; font-weight: 500;}
+        .flash.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .train-btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; background-color: #3498db; color: white; margin-top: 10px; }
+        .train-btn:hover { background-color: #2980b9; }
+        .status-box { padding: 15px; border: 1px solid #ccc; border-radius: 6px; background-color: #fff; margin-bottom: 20px; }
+        .home-link { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; }
+    </style>
+</head>
+<body>
+
+    <a href="{{ url_for('index') }}" class="home-link">← Back to Prediction Interface</a>
+
+    <h1>🧠 Model Training Management</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="status-box">
+        <h2>Current Training Status</h2>
+        <p>Total Data Samples in Database: <strong>{{ sample_count }}</strong></p>
+        <p>Last Training Result: <em>{{ train_status }}</em></p>
+    </div>
+
+    <h2>Trigger Retraining</h2>
+    <p>Use this button to retrain the model on **all currently available data** in the database.</p>
+    <p style="font-size: small; color: gray;">*Note: Training requires at least 5 samples with both 'ham' and 'spam' labels.</p>
+    
+    <form method="POST" action="{{ url_for('training_page') }}">
+        <button type="submit" class="train-btn">
+            🔄 Start Retraining Now (Train on {{ sample_count }} Samples)
+        </button>
+    </form>
+</body>
+</html>
